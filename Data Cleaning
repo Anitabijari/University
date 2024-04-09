@@ -1,0 +1,771 @@
+USE SQLGroupQualityCleaned
+GO 
+
+--Student 
+--Table  [Student]
+--[StudentID], [ScholarshipID], [PersonalId], [StudentFirstName], [StudentLastName], [Nationality], [SoftDelete]
+
+-- Create a view to see null
+CREATE VIEW NullValuesView AS
+SELECT 
+    StudentID,
+	ScholarshipID,
+    PersonalID,
+    StudentFirstName,
+    StudentLastName,
+    Nationality,
+    SoftDelete
+FROM 
+   Student
+WHERE
+       StudentID IS NULL
+	OR ScholarshipID IS NULL
+    OR PersonalID IS NULL
+    OR StudentFirstName IS NULL
+    OR StudentLastName IS NULL
+    OR Nationality IS NULL
+    OR SoftDelete IS NULL;
+GO
+
+	-- Select from the view
+SELECT * FROM NullValuesView;
+GO
+
+-- Create a stored procedure to check if ID as pripmary key is unique 
+	--This HAVING clause checks if there is more than one occurrence of either [StudentID] or [PersonalId]
+	--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckDuplicateStudentIDs
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM Student
+        GROUP BY StudentID, PersonalID
+        HAVING COUNT(StudentID) > 1 OR COUNT(PersonalID) > 1
+    )
+    BEGIN
+        PRINT 'Duplicates exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result 
+EXEC CheckDuplicateStudentIDs;
+GO
+
+ --Check for invalid Scholarship as fk in  Scholarship
+SELECT *
+FROM Student
+WHERE ScholarshipID IS NOT NULL 
+AND ScholarshipID NOT IN 
+(SELECT ScholarshipID FROM Scholarship);
+GO
+
+-- Check for conditions in the Student table and show only failed checks
+SELECT TOP (30) *
+FROM [Student]
+WHERE 
+    (LEN(StudentFirstName) NOT BETWEEN 0 AND 50)  -- Check length of StudentFirstName between 1 and 50 characters
+    OR (LEN(StudentLastName) NOT BETWEEN 0 AND 50)  -- Check length of StudentLastName between 1 and 50 characters
+    OR (LEN(Nationality) NOT BETWEEN 0 AND 50)  -- Check length of Nationality between 1 and 50 characters
+    OR NOT (SoftDelete IN (0, 1));  -- Check that SoftDelete is either 0 or 1
+GO
+
+--[Address],[AddressId], [StudentID], [StreetAddress], [City], [ZipCode]
+-- Create a view to see null
+CREATE VIEW NullAddressValuesView AS
+SELECT 
+    AddressId,
+    StudentID,
+    StreetAddress,
+    City,
+    ZipCode
+FROM 
+    [Address]
+WHERE
+    AddressId IS NULL
+    OR StudentID IS NULL
+    OR StreetAddress IS NULL
+    OR City IS NULL
+    OR ZipCode IS NULL;
+GO
+
+-- Select from the view
+SELECT * FROM  NullAddressValuesView;
+GO
+
+-- Create a stored procedure to check if AddressId is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueAddressIds
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM [Address]
+        GROUP BY AddressId
+        HAVING COUNT(AddressId) > 1
+    )
+    BEGIN
+        PRINT 'Duplicate AddressIds exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All AddressIds are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueAddressIds;
+GO
+
+--Check for invalid StudentID as FK in Address Table
+SELECT *
+FROM [Address]
+WHERE StudentID IS NOT NULL AND 
+	  StudentID NOT IN 
+	  (SELECT StudentID FROM Student);
+GO
+
+-- Check Range Check for conditions in the Address table and show only failed checks
+SELECT *
+FROM [Address]
+WHERE 
+    NOT (LEN(ISNULL(StreetAddress, '')) BETWEEN 0 AND 255)  -- Check length of StreetAddress between 1 and 255 characters
+    OR NOT (LEN(ISNULL(City, '')) BETWEEN 0 AND 50)  -- Check length of City between 1 and 50 characters
+    OR NOT (LEN(ISNULL(ZipCode, '')) BETWEEN 0 AND 20)  -- Check length of ZipCode between 1 and 20 characters
+    OR NOT (StudentID > 0)  -- Check that StudentID is greater than 0
+GO
+
+--Table Scholarship:[ScholarshipID], [ScholarshipName], [ScholarShipInfo], [ScholarShipSponsor], [SoftDelete]
+-- Create a view to see null
+CREATE VIEW NullScholarshipValuesView AS
+SELECT 
+	ScholarshipID,
+	SponsorID,
+    ScholarshipName,
+    ScholarShipInfo,
+    SoftDelete
+FROM 
+	Scholarship
+WHERE
+    ScholarshipID  IS NULL
+	OR SponsorID IS NULL 
+    OR ScholarshipName IS NULL
+    OR ScholarShipInfo IS NULL
+    OR SoftDelete IS NULL;
+GO
+
+-- Select from the view
+SELECT * FROM NullScholarshipValuesView;
+GO
+
+-- Create a stored procedure to check if ScholarshipID is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueScholarshipIds
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM Scholarship
+        GROUP BY ScholarshipID
+        HAVING COUNT(ScholarshipID) > 1
+    )
+    BEGIN
+        PRINT 'Duplicate ScholarshipIDs exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All ScholarshipIDs are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueScholarshipIds;
+GO
+
+--´Table Department:[DepartmentID], [DepartmentName], [DepartmentInfo], [ManagerFirstName], [ManagerLastName]
+-- Create a view  to see if there is  null
+CREATE VIEW NullDepartmentValuesView AS
+SELECT 
+    DepartmentID,
+    DepartmentName,
+    DepartmentInfo,
+    ManagerFirstName,
+    ManagerLastName
+FROM 
+    Department
+WHERE
+    DepartmentID IS NULL
+    OR DepartmentName IS NULL
+    OR DepartmentInfo IS NULL
+    OR ManagerFirstName IS NULL
+    OR ManagerLastName IS NULL;
+-- Select from the view
+GO
+
+SELECT * FROM NullDepartmentValuesView;
+GO
+
+-- Create a stored procedure to check if DepartmentID is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueDepartmentIds
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM Department
+        GROUP BY DepartmentID
+        HAVING COUNT(DepartmentID) > 1
+    )
+    BEGIN
+        PRINT 'Duplicate DepartmentIDs exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All DepartmentIDs are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueDepartmentIds;
+GO
+
+--Table University: UniversityID, [StudentEduBridgeID], [UniversityName]
+-- Create a view  to see null
+CREATE VIEW NullUniversityValuesView AS
+SELECT 
+    UniversityID,
+    UniversityName
+FROM 
+    University
+WHERE
+    UniversityID IS NULL
+    OR UniversityName IS NULL;
+GO
+
+-- Select from the view
+SELECT * FROM NullUniversityValuesView;
+GO
+
+-- Create a stored procedure to check if UniversityID is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueUniversityIds
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM University
+        GROUP BY UniversityID
+        HAVING COUNT(UniversityID) > 1
+    )
+    BEGIN
+        PRINT 'Duplicate UniversityID exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All UniversityID are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueUniversityIds;
+GO
+
+--Table StuEduBridge:[StudentEduBridgeID], [EducationID], [StudentID]
+-- Create a view t o see null 
+CREATE VIEW NullStuEduBridgeValuesView AS
+SELECT 
+    StudentEduBridgeID,
+    EducationID,
+    StudentID
+FROM 
+    StuEduBridge
+WHERE
+    StudentEduBridgeID IS NULL
+    OR EducationID IS NULL
+    OR StudentID IS NULL;
+GO
+
+-- Select from the view
+SELECT * FROM NullStuEduBridgeValuesView;
+GO
+
+-- Check for invalid [EducationID], [StudentID] combinations in StuEduBridge table
+SELECT *
+FROM  StuEduBridge 
+WHERE ( EducationID  IS NOT NULL AND  EducationID  NOT IN
+	  (SELECT  EducationID FROM Education))
+   OR ( StudentID  IS NOT NULL AND  StudentID  NOT IN 
+   (SELECT StudentID FROM Student));
+GO
+
+-- Create a stored procedure to check if StudentEduBridgeID is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueStudentEduBridgeIds
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM StuEduBridge
+        GROUP BY StudentEduBridgeID
+        HAVING COUNT(StudentEduBridgeID) > 1
+    )
+    BEGIN
+        PRINT 'Duplicate StudentEduBridgeIDs exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All StudentEduBridgeIDs are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueStudentEduBridgeIds;
+GO
+
+--Table EmpUniBridge: [EmployeeUniBridgeID], [UniversityID], [EmployeeID]
+-- Create a view  to see null
+CREATE VIEW NullEmpUniBridgeValuesView AS
+SELECT 
+    EmployeeUniBridgeID,
+    UniversityID,
+    EmployeeID
+FROM 
+    EmpUniBridge
+WHERE
+    EmployeeUniBridgeID IS NULL
+    OR UniversityID IS NULL
+    OR EmployeeID IS NULL;
+-- Select from the view
+GO
+
+SELECT * FROM NullEmpUniBridgeValuesView;
+GO
+
+-- Create a stored procedure to check if EmployeeUniBridgeID is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueEmployeeUniBridgeIds
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM EmpUniBridge
+        GROUP BY EmployeeUniBridgeID
+        HAVING COUNT(EmployeeUniBridgeID) > 1
+    )
+    BEGIN
+        PRINT 'Duplicate EmployeeUniBridgeIDs exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All EmployeeUniBridgeIDs are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueEmployeeUniBridgeIds;
+GO
+
+-- Check for invalid [UniversityID], [EmployeeID] combinations in EmpUniBridge table
+SELECT *
+FROM EmpUniBridge
+WHERE (UniversityID IS NOT NULL AND 
+	  UniversityID NOT IN 
+	  (SELECT UniversityID FROM University))
+      OR (EmployeeID IS NOT NULL AND 
+      EmployeeID NOT IN 
+      (SELECT EmployeeID FROM Employee));
+GO
+
+--Table DepEmpBridge:[DepartmentEmpBridgeID], [EmployeeID], [DepartmentID]
+
+-- Create a view  to see null
+CREATE VIEW NullDepEmpBridgeValuesView AS
+SELECT 
+    DepartmentEmpBridgeID,
+    EmployeeID,
+    DepartmentID
+FROM 
+    DepEmpBridge
+WHERE
+    DepartmentEmpBridgeID IS NULL
+    OR EmployeeID IS NULL
+    OR DepartmentID IS NULL;
+GO
+
+-- Select from the view
+SELECT * FROM NullDepEmpBridgeValuesView;
+GO
+
+-- Create a stored procedure to check if DepartmentEmpBridgeID is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueDepartmentEmpBridgeIds
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM DepEmpBridge
+        GROUP BY DepartmentEmpBridgeID
+        HAVING COUNT(DepartmentEmpBridgeID) > 1
+    )
+    BEGIN
+        PRINT 'Duplicate DepartmentEmpBridgeIDs exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All DepartmentEmpBridgeIDs are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueDepartmentEmpBridgeIds;
+GO
+
+-- Check for invalid [EmployeeID], [DepartmentID] combinations in DepEmpBridge table
+SELECT *
+FROM DepEmpBridge
+WHERE (EmployeeID IS NOT NULL AND 
+	  EmployeeID NOT IN 
+	  (SELECT EmployeeID FROM Employee))
+      OR (DepartmentID IS NOT NULL AND 
+	  DepartmentID NOT IN 
+	  (SELECT DepartmentID FROM Department));
+GO
+
+--Table Employee: , [EmployeeID], [PersonalID], [FirstName], [LastName], [EmployeePhone], [EmployeeEmail], [SoftDelete]
+
+-- Create a view  to see null
+CREATE VIEW NullEmployeeValuesView AS
+SELECT 
+	EmployeeID,
+    PersonalID,
+    EmployeeFirstName, 
+	EmployeeLastName, 
+	SoftDelete
+FROM 
+    Employee
+WHERE
+    PersonalID IS NULL
+    OR EmployeeID IS NULL
+    OR EmployeeFirstName IS NULL 
+	OR EmployeeLastName IS NULL
+    OR SoftDelete IS NULL
+GO
+
+-- Select from the view
+SELECT * FROM NullEmployeeValuesView ;
+GO
+
+-- Create a stored procedure to check if EmployeeId  is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueEmployeeID
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM Employee
+        GROUP BY EmployeeID
+		 HAVING COUNT(EmployeeID) >  1
+    )
+    BEGIN
+        PRINT 'Duplicates exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All are unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueEmployeeID;
+GO
+
+-- Check for range conditions in the Employee table and show only failed checks
+SELECT *
+FROM Employee
+WHERE 
+    NOT (LEN(ISNULL(EmployeeFirstName, '')) BETWEEN 0 AND 50)  -- Check length of FirstName between 1 and 50 characters
+    OR NOT (LEN(ISNULL(EmployeeLastName, '')) BETWEEN 0 AND 50)  -- Check length of LastName between 1 and 50 characters
+    OR NOT (SoftDelete IN (1, 0));  -- Check that SoftDelete is either 0 ,1
+GO
+
+-- Create a stored procedure to check if  is EmployeeEmailunique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueEmployeeEmail
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM EmployeeContact
+        GROUP BY EmployeeEmail
+		 HAVING  COUNT(EmployeeEmail) > 1
+    )
+    BEGIN
+        PRINT 'Duplicates exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'All are unique.';
+    END;
+END;
+GO
+
+EXEC CheckUniqueEmployeeEmail;
+GO
+
+--[Education]:
+
+-- Create a view  to see null
+CREATE VIEW NullEducationValuesView AS
+SELECT 
+    EducationID,
+    UniversityID,
+	EducationName, 
+	EducationInfo, 
+	SoftDelete
+FROM 
+    Education
+WHERE
+    EducationID IS NULL
+    OR UniversityID IS NULL
+	OR EducationName IS NULL
+	OR EducationInfo IS NULL
+	OR SoftDelete  IS NULL
+GO	
+     
+-- Select from the view
+SELECT * FROM NullEducationValuesView ;
+GO
+
+-- Create a stored procedure to check if DepartmentEmpBridgeID is unique
+--If the count is greater than 1, it means there are duplicates.
+CREATE PROCEDURE CheckUniqueEducationID
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM  Education 
+        GROUP BY  EducationID 
+		 HAVING COUNT( EducationID ) > 1 
+    )
+    BEGIN
+        PRINT 'Duplicates for EducationID exist.';
+    END
+    ELSE
+    BEGIN
+        PRINT 'EducationID is  unique.';
+    END;
+END;
+GO
+
+-- Execute the stored procedure to see the result
+EXEC CheckUniqueEducationID;
+GO
+
+-- Check if there's a matching record and return the result or an error
+SELECT
+    s.StudentFirstName,
+    s.StudentLastName,
+    CASE
+        WHEN e.EducationID IS NOT NULL THEN e.EducationName
+        ELSE 'Error: No matching record'
+    END AS MajorOrError
+FROM
+     Student   s
+LEFT JOIN
+     StuEduBridge  seb ON s.StudentID = seb.StudentID
+LEFT JOIN
+     Education  e ON seb.EducationID = e.EducationID;
+GO
+
+-- Check for range conditions in the Education table and show only failed checks
+SELECT *
+FROM Education
+WHERE 
+    NOT (LEN(ISNULL( EducationName , '')) BETWEEN 0 AND 50)  
+    OR NOT (LEN(ISNULL( EducationInfo , '')) BETWEEN 0 AND 255)  
+    OR NOT (SoftDelete  IN (0, 1)); 
+GO
+
+	-- Check for invalid UniversityID as fk in Education table
+SELECT *
+FROM Education
+WHERE (UniversityID IS NOT NULL AND UniversityID NOT IN (SELECT UniversityID FROM University))
+GO
+
+--checking if MaxCapacity >= MinRequiredSignedUps [dbo].[Participants]
+SELECT
+    CASE
+        WHEN MaxCapacity >= MinRequiredSignedUps THEN 'Correct'
+        ELSE 'Not Correct Information'
+    END AS Result
+FROM Participants;
+GO
+
+-- Check for consistency and valid date formats between StuEduBridge and Education tables
+--Zscore = caculation zscore in sql  for [MaxCapacity] and [GraduatedStudents]
+CREATE PROCEDURE CalculateZScoresForMaxCapacity
+AS
+BEGIN
+    -- Declare variables to store mean and standard deviation
+    DECLARE @Mean FLOAT, @StdDev FLOAT;
+
+    -- Calculate mean and standard deviation
+    SELECT 
+        @Mean = AVG(CAST(MaxCapacity AS FLOAT)),
+        @StdDev = STDEVP(CAST(MaxCapacity AS FLOAT))
+    FROM Participants;
+
+    -- Select the MaxCapacity calculated Z-scores
+    SELECT 
+        MaxCapacity,
+        @Mean AS MeanSQL,
+        @StdDev as StdDevSQL,
+        ROUND((MaxCapacity - @Mean) / @StdDev, 4) AS ZScore_SQL
+    FROM 
+        Participants;
+END;
+GO
+
+-- Execute the stored procedure
+EXEC CalculateZScoresForMaxCapacity;
+GO
+
+------ Create a PROCEDURE to the compare the results for Zscore in sql and zscore in excell .
+--- if they are excaclly the same messege it is ok .
+CREATE PROCEDURE CompareZScores
+AS
+BEGIN
+    SELECT 
+        MaxCapacity,
+        ROUND(MaxCapacityZscore, 4) AS ZScoreExcell,
+        ROUND((MaxCapacity - (SELECT AVG(CAST(MaxCapacity AS FLOAT))  FROM  
+		Participants)) / (SELECT STDEVP(MaxCapacity) FROM  Participants), 4) AS ZScore_SQL,
+        CASE 
+            WHEN ROUND(MaxCapacityZscore, 4) = ROUND((MaxCapacity - (SELECT AVG(CAST(MaxCapacity AS FLOAT)) 
+			FROM  Participants)) / (SELECT STDEVP(MaxCapacity) FROM Participants), 4) THEN 'It is ok'
+            ELSE 'It is not ok'
+        END AS ComparisonResult
+    FROM 
+         Participants;
+END;
+GO
+
+ -- Execute the stored procedure
+EXEC CompareZScores;
+GO
+
+--Zscore = caculation zscore in sql  for GraduatedStudents
+CREATE PROCEDURE CalculateZScoresGraduatedStudents
+AS
+BEGIN
+    -- Declare variables to store mean and standard deviation
+    DECLARE @Mean FLOAT, @StdDev FLOAT;
+
+    -- Calculate mean and standard deviation
+    SELECT 
+        @Mean = AVG(CAST(GraduatedStudents AS FLOAT)),
+        @StdDev = STDEVP(CAST(GraduatedStudents AS FLOAT))
+    FROM Participants;
+ -- Select the GraduatedStudents calculated Z-scores
+    SELECT 
+        GraduatedStudents,
+        @Mean AS MeanSQL,
+        @StdDev as StdDevSQL,
+        ROUND((GraduatedStudents - @Mean) / @StdDev, 4) AS ZScore_SQL
+    FROM 
+       Participants;
+END;
+GO
+
+-- Execute the stored procedure
+EXEC CalculateZScoresGraduatedStudents;
+GO
+
+------ Create a PROCEDURE to compare the results for Zscore in sql and Zscore in Excel .
+--- if they are excactly the same message it is ok .
+
+CREATE PROCEDURE CompareZScoresforGraduatedStudents
+AS
+BEGIN
+    SELECT 
+        GraduatedStudents,
+        ROUND(GraduatedStudentsZscore, 4) AS ZScoreExcell,
+        ROUND((GraduatedStudents - (SELECT AVG(CAST(GraduatedStudents AS FLOAT)) 
+		FROM   Participants)) / (SELECT STDEVP(GraduatedStudents) 
+		FROM   Participants), 4) AS ZScore_SQL,
+        CASE 
+            WHEN ROUND(GraduatedStudentsZscore, 4) = ROUND((GraduatedStudents - (SELECT AVG(CAST(GraduatedStudents AS FLOAT)) 
+			FROM  Participants)) / (SELECT STDEVP(GraduatedStudents) 
+			FROM  Participants), 4) THEN 'It is ok'
+            ELSE 'It is not ok'
+        END AS ComparisonResult
+    FROM 
+          Participants;
+END;
+GO
+
+ -- Execute the stored procedure
+EXEC CompareZScoresforGraduatedStudents;
+GO
+
+
+------------SQL Questions---------------
+
+---What different countries does all of the students come from?
+
+SELECT DISTINCT Nationality
+FROM Student
+ORDER BY Nationality ASC;
+GO
+
+
+---How many have participated in the different master classes?
+
+SELECT SUM(P.VerifiedAttendees) AS [Total amount of attendes in master classes]
+FROM Participants P
+JOIN Education E ON P.EducationID=E.EducationID
+WHERE EducationName LIKE 'Ma%';
+GO
+
+
+---What students have been deactivated from the databsase?
+
+SELECT StudentFirstName + ' ' + StudentLastName 'Deactivated Students'
+FROM Student
+WHERE SoftDelete = 1;
+GO
+
+---Show status for educations that has end dates:
+--- *NUll as "To be cheecked"
+--- *2023 and earlier as "Ended*
+--- *2024 as *Ongoing"
+--- *2025 and later as "Forthcoming"
+
+SELECT E.EducationName, ED.EndDate,
+  CASE
+    WHEN ED.EndDate IS NULL THEN 'To be checked'
+    WHEN ED.EndDate <= '2023' THEN 'Ended'
+    WHEN ED.EndDate <= '2024' THEN 'Ongoing'
+    ELSE 'Forthcoming'
+  END AS Status 
+FROM Education E
+JOIN EduDateBridge EB ON E.EducationID = EB.EducationID
+JOIN EduDate ED ON ED.EduDateID = EB.EduDateID
+ORDER BY ED.EndDate;
+GO
+
+
+------------THE END-------------
